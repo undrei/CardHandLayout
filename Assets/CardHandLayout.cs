@@ -39,23 +39,6 @@ public class CardHandLayout : MonoBehaviour
 		cardSlot.OnDelete = null;
 		cardSlots.Remove(cardSlot);
 	}
-
-	public void SetPlaceWidth(CardSlot cardSlot, float width)
-	{
-		if (cardSlot == null || !cardSlots.Contains(cardSlot))
-		{
-			Debug.LogError($"[{nameof(CardHandLayout)}]: null or not found cardPlace");
-			return;
-		}
-		
-		cardSlot.RectTransform.sizeDelta = new Vector2(width, cardSlot.RectTransform.sizeDelta.y);
-	}
-	
-	public void DeletePlace(int index)
-	{
-		Destroy(cardSlots[index].gameObject); 
-		cardSlots.RemoveAt(index);
-	}
 	
 	public void RebuildLayout()
 	{

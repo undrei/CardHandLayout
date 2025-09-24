@@ -5,16 +5,15 @@ using UnityEngine.UI;
 public class CardHand : MonoBehaviour
 {
 	[SerializeField]
-	protected CardHandConfig config;
-	
+	private CardHandConfig config;
 	[SerializeField] 
-	protected CardHandLayout layout;
+	private CardHandLayout layout;
 	[SerializeField]
-	protected Transform cardContainer;
+	private Transform cardContainer;
 	[SerializeField] 
-	protected GameObject cardSample;
+	private GameObject cardSample;
 	[SerializeField]
-	protected List<Card> cards = new List<Card>();
+	private List<Card> cards = new List<Card>();
 	
 	public List<Card> Cards => cards;
 	public CardHandLayout Layout => layout;
