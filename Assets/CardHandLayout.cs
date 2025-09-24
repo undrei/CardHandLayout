@@ -5,55 +5,56 @@ using UnityEngine.UI;
 [RequireComponent(typeof(HorizontalLayoutGroup))]
 public class CardHandLayout : MonoBehaviour
 {
-	[SerializeField]
-	public List<CardMark> cardMarks;
 	[SerializeField] 
-	private GameObject cardMarkSample;
+	private GameObject cardSlotSample;
+	[SerializeField]
+	private List<CardSlot> cardSlots;
+	
+	public List<CardSlot> CardSlots => cardSlots;
 
 	private void Awake()
 	{
-		cardMarks.Clear();
-		cardMarkSample.SetActive(false);
+		cardSlots.Clear();
+		cardSlotSample.SetActive(false);
 	}
 
-	public CardMark CreateCardMark(float width = 40f)
+	public CardSlot CreateCardSlot()
 	{
-		CardMark cardMark = Instantiate(cardMarkSample, transform).GetComponent<CardMark>();
-		cardMark.gameObject.SetActive(true);
-		cardMark.RectTransform.sizeDelta = new Vector2(width, cardMark.RectTransform.sizeDelta.y);
-		cardMark.OnDelete += () => OnCardMarkDestroyed(cardMark);
+		CardSlot cardSlot = Instantiate(cardSlotSample, transform).GetComponent<CardSlot>();
+		cardSlot.gameObject.SetActive(true);
+		cardSlot.OnDelete += () => OnCardMarkDestroyed(cardSlot);
 		
-		cardMarks.Add(cardMark);
-		return cardMark;
+		cardSlots.Add(cardSlot);
+		return cardSlot;
 	}
 
-	private void OnCardMarkDestroyed(CardMark cardMark)
+	private void OnCardMarkDestroyed(CardSlot cardSlot)
 	{
-		if (!cardMarks.Contains(cardMark))
+		if (!cardSlots.Contains(cardSlot))
 		{
-			Debug.Log($"[{nameof(CardHandLayout)}]: Can't delete place, it's not in the list", cardMark);
+			Debug.Log($"[{nameof(CardHandLayout)}]: Can't delete place, it's not in the list", cardSlot);
 			return;
 		}
 
-		cardMark.OnDelete = null;
-		cardMarks.Remove(cardMark);
+		cardSlot.OnDelete = null;
+		cardSlots.Remove(cardSlot);
 	}
 
-	public void SetPlaceWidth(CardMark cardMark, float width)
+	public void SetPlaceWidth(CardSlot cardSlot, float width)
 	{
-		if (cardMark == null || !cardMarks.Contains(cardMark))
+		if (cardSlot == null || !cardSlots.Contains(cardSlot))
 		{
 			Debug.LogError($"[{nameof(CardHandLayout)}]: null or not found cardPlace");
 			return;
 		}
 		
-		cardMark.RectTransform.sizeDelta = new Vector2(width, cardMark.RectTransform.sizeDelta.y);
+		cardSlot.RectTransform.sizeDelta = new Vector2(width, cardSlot.RectTransform.sizeDelta.y);
 	}
 	
 	public void DeletePlace(int index)
 	{
-		Destroy(cardMarks[index].gameObject); 
-		cardMarks.RemoveAt(index);
+		Destroy(cardSlots[index].gameObject); 
+		cardSlots.RemoveAt(index);
 	}
 	
 	public void RebuildLayout()

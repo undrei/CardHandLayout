@@ -5,7 +5,7 @@ using UnityEngine.UI;
 public class CardHand : MonoBehaviour
 {
 	[SerializeField]
-	protected CardContainerConfig config;
+	protected CardHandConfig config;
 	
 	[SerializeField] 
 	protected CardHandLayout layout;
@@ -18,14 +18,13 @@ public class CardHand : MonoBehaviour
 	
 	public List<Card> Cards => cards;
 	public CardHandLayout Layout => layout;
-	public CardContainerConfig Config => config;
+	public CardHandConfig Config => config;
 	
 	private void Start()
 	{
 		SpawnCards();
 	}
-
-	[ContextMenu("Spawn Cards")]
+	
 	private void SpawnCards()
 	{
 		ClearAll();
@@ -34,7 +33,7 @@ public class CardHand : MonoBehaviour
 		{
 			Card card = CreateNewCard();
 			card.gameObject.name = $"Card [{i}]";
-			card.AttachedMark.name = $"CardMark [{i}]";
+			card.AttachedSlot.name = $"CardSlot [{i}]";
 		}
 		UpdateVisuals();
 	}
@@ -43,7 +42,7 @@ public class CardHand : MonoBehaviour
 	{
 		Card newCard = Instantiate(cardSample, cardContainer).GetComponent<Card>();
 		newCard.gameObject.SetActive(true);
-		newCard.AttachToMark(layout.CreateCardMark(config.CardPlaceWidth));
+		newCard.AttachToMark(layout.CreateCardSlot());
 		layout.RebuildLayout();
 		cards.Add(newCard);
 
@@ -65,26 +64,32 @@ public class CardHand : MonoBehaviour
 		foreach (Card card in cards)
 		{
 			if (card == null) continue;
-			Destroy(card.gameObject);
+			
+			if (Application.isPlaying) 
+				Destroy(card.gameObject);
+			else
+				DestroyImmediate(card.gameObject);
 		}
 		cards.Clear();
 		
-		foreach (CardMark cardMark in layout.cardMarks)
+		foreach (CardSlot cardSlot in layout.CardSlots)
 		{
-			if (cardMark == null) continue;
-			Destroy(cardMark.gameObject);
+			if (cardSlot == null) continue;
+			
+			if (Application.isPlaying) 
+				Destroy(cardSlot.gameObject);
+			else
+				DestroyImmediate(cardSlot.gameObject);
 		}
-		layout.cardMarks.Clear();
+		layout.CardSlots.Clear();
 	}
 	
-#region Position updating
-	[ContextMenu("Update Visuals")]
 	private void UpdateVisuals()
 	{
 		layout.GetComponent<HorizontalLayoutGroup>().spacing = config.CardSpacing;
 		layout.RebuildLayout();
 
-		if (cards.Count != layout.cardMarks.Count)
+		if (cards.Count != layout.CardSlots.Count)
 		{
 			Debug.LogError($"[{nameof(CardHand)}]: Layout place count and cards count are different!!");
 			return;
@@ -95,13 +100,19 @@ public class CardHand : MonoBehaviour
 			if (card.State == CardState.Hovered)
 				continue;
 			
-			StartCoroutine(card.MoveTo(GetPosition(card), GetRotation(card)));
+			if (Application.isPlaying)
+				StartCoroutine(card.MoveTo(GetPosition(card), GetRotation(card)));
+			else
+			{
+				card.transform.position = GetPosition(card);
+				card.transform.eulerAngles = GetRotation(card);
+			}
 		}
 	}
 	
 	private Vector3 GetPosition(Card card)
 	{
-		if (card == null || card.AttachedMark == null)
+		if (card == null || card.AttachedSlot == null)
 		{
 			Debug.LogWarning($"[{nameof(CardHand)}]: Can't get position of the card");
 			return Vector3.zero;
@@ -115,7 +126,7 @@ public class CardHand : MonoBehaviour
 		else
 			curveResult = config.CurvePositioning.Evaluate((float) index / (cards.Count - 1)) * config.VerticalOffsetCoef * (cards.Count - 1);
 		
-		Vector3 newPos = card.AttachedMark.transform.position + transform.up * curveResult;
+		Vector3 newPos = card.AttachedSlot.transform.position + transform.up * curveResult;
 
 		return newPos;
 	}
@@ -135,13 +146,97 @@ public class CardHand : MonoBehaviour
 	
 		return finalRotation.eulerAngles;
 	}
-	
-	public void ReorderCards()
+		
+	#region Gizmos Drawing
+	private void OnDrawGizmos()
 	{
-		foreach (Card card in cards)
+		DrawCurveGizmos();
+	}
+
+	private void DrawCurveGizmos()
+	{
+		if (config == null || config.CurvePositioning == null || layout == null)
+			return;
+		
+		layout.RebuildLayout();
+
+		if (layout.CardSlots.Count < 2)
+			return;
+		
+		Vector3 firstSlotPos = layout.CardSlots[0].transform.position;
+		Vector3 lastSlotPos = layout.CardSlots[^1].transform.position;
+		
+		// CardSlots position
+		Gizmos.color = Color.gray;
+		Gizmos.DrawLine(firstSlotPos, lastSlotPos);
+		foreach (var slot in layout.CardSlots)
 		{
-			card.transform.SetSiblingIndex(cards.IndexOf(card));
+			Gizmos.DrawWireSphere(slot.transform.position, 10f);
+		}
+
+		// Hand curve
+		Gizmos.color = Color.cyan;
+		Vector3 prevPoint = Vector3.zero;
+		bool firstPoint = true;
+
+		int curveSteps = 50;
+
+		for (int i = 0; i <= curveSteps; i++)
+		{
+			float t = (float)i / curveSteps;
+			
+			Vector3 basePosition = Vector3.Lerp(firstSlotPos, lastSlotPos, t);
+			
+			float curveValue;
+			if (cards.Count <= 1)
+				curveValue = config.CurvePositioning.Evaluate(0.5f) * config.VerticalOffsetCoef;
+			else
+				curveValue = config.CurvePositioning.Evaluate(t) * config.VerticalOffsetCoef * (cards.Count - 1);
+			
+			Vector3 curvePoint = basePosition + transform.up * curveValue;
+			
+			if (!firstPoint)
+			{
+				Gizmos.DrawLine(prevPoint, curvePoint);
+			}
+
+			prevPoint = curvePoint;
+			firstPoint = false;
+		}
+		
+		if (cards.Count > 0)
+		{
+			Gizmos.color = Color.green;
+			for (int i = 0; i < cards.Count; i++)
+			{
+				if (cards[i] != null && cards[i].AttachedSlot != null)
+				{
+					Vector3 cardPos = GetPosition(cards[i]);
+					Vector3 cardRot = GetRotation(cards[i]);
+					
+					Gizmos.color = Color.yellow;
+					Gizmos.DrawLine(cards[i].AttachedSlot.transform.position, cardPos);
+					DrawCardRotationGizmo(cardPos, cardRot);
+				}
+			}
 		}
 	}
-#endregion
+	
+	private void DrawCardRotationGizmo(Vector3 cardPosition, Vector3 cardRotation)
+	{
+		Quaternion rotation = Quaternion.Euler(cardRotation);
+		Vector3 cardUp = rotation * Vector3.up;
+		Vector3 cardRight = rotation * Vector3.right;
+		Vector3 cardLeft = rotation * Vector3.left;
+		
+		// Card direction
+		Gizmos.color = Color.red;
+		Vector3 arrowEnd = cardPosition + cardUp * 30f;
+		Gizmos.DrawLine(cardPosition, arrowEnd);
+    
+		// Card bottom line
+		Gizmos.DrawLine(cardPosition + cardLeft * 10f, cardPosition + cardRight * 10f);
+	}
+
+	#endregion
 }

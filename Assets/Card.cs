@@ -8,63 +8,71 @@ public class Card : MonoBehaviour
 	public Action OnDelete;
 	
 	[SerializeField]
-	private CardMark attachedMark;
-	[SerializeField]
 	private RectTransform gfx;
 	[SerializeField]
-	private float animSpeed = 5f;
-
-	private BoxCollider2D col;
+	private float animTime = 0.5f;
+	
+	private CardSlot attachedSlot;
 	private CardState state;
-	private CardHand container;
-	private Vector3 origPos;
 	
 	public RectTransform Gfx => gfx;
 	public CardState State => state;
-	public CardMark AttachedMark => attachedMark;
+	public CardSlot AttachedSlot => attachedSlot;
 
-	public void AttachToMark(CardMark newMark) => attachedMark = newMark;
-
-	private void Awake()
-	{
-		col = GetComponent<BoxCollider2D>();
-	}
+	public void AttachToMark(CardSlot newSlot) => attachedSlot = newSlot;
 
 	private void OnDestroy()
 	{
 		OnDelete?.Invoke();
 		
-		if (attachedMark != null) 
-			Destroy(attachedMark);
+		if (attachedSlot != null) 
+			Destroy(attachedSlot);
 	}
-
-	public void Init()
-	{
-		
-	}
-
+	
 	public IEnumerator MoveTo(Vector3 targetPos, Vector3 targetRot)
 	{
-		while (Vector3.Distance(transform.position, targetPos) > 0.01f)
+		Vector3 startPos = transform.position;
+		Vector3 startRot = transform.eulerAngles;
+		
+		Vector3 normalizedTargetRot = NormalizeAngles(targetRot, startRot);
+    
+		float elapsed = 0f;
+    
+		while (elapsed < animTime)
 		{
-			transform.position = Vector3.Lerp(transform.position, targetPos, Time.deltaTime * animSpeed);
-			transform.eulerAngles = Vector3.Lerp(transform.eulerAngles, targetRot, Time.deltaTime * animSpeed);
+			elapsed += Time.deltaTime;
+			float t = elapsed / animTime;
+        
+			transform.position = Vector3.Lerp(startPos, targetPos, t);
+			transform.eulerAngles = Vector3.Lerp(startRot, normalizedTargetRot, t);
+        
 			yield return null;
 		}
-	
+
 		transform.position = targetPos;
 		transform.eulerAngles = targetRot;
 	}
 	
-	public int GetIndex()
+	private Vector3 NormalizeAngles(Vector3 target, Vector3 current)
 	{
-		return container.Cards.IndexOf(this);
+		Vector3 normalized = target;
+		
+		for (int i = 0; i < 3; i++)
+		{
+			float diff = target[i] - current[i];
+			
+			while (diff > 180f) diff -= 360f;
+			while (diff < -180f) diff += 360f;
+        
+			normalized[i] = current[i] + diff;
+		}
+    
+		return normalized;
 	}
 
 	private void OnDrawGizmos()
 	{
 		Gizmos.color = Color.green;
-
 		Gizmos.DrawLine(transform.position, transform.position + transform.up * 0.5f);
 	}
 }

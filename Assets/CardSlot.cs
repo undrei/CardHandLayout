@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-public class CardMark : MonoBehaviour
+public class CardSlot : MonoBehaviour
 {
 	public Action OnDelete;
 		

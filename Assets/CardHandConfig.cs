@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 
-[CreateAssetMenu(fileName = "new_cc_config", menuName = "Config/CardContainerConfig")]
-public class CardContainerConfig : ScriptableObject
+[CreateAssetMenu(fileName = "NewCardHandConfig", menuName = "Config/CardHandConfig")]
+public class CardHandConfig : ScriptableObject
 {
 	[SerializeField]
 	private AnimationCurve curvePositioning;
@@ -11,12 +11,8 @@ public class CardContainerConfig : ScriptableObject
 	[Header("Position setup")]
 	[SerializeField] 
 	private float cardSpacing = 0f;
-	[SerializeField]
-	private float cardPlaceWidth = 40f;
 	[SerializeField] 
 	private float verticalOffsetCoef = 5f;
-	[SerializeField]
-	private float cardHoverOffset = 5f;
 	
 	[Header("Rotation setup")]
 	[SerializeField]
@@ -27,9 +23,7 @@ public class CardContainerConfig : ScriptableObject
 	public AnimationCurve CurvePositioning => curvePositioning;
 	public AnimationCurve CurveRotation => curveRotation;
 	public float CardSpacing => cardSpacing;
-	public float CardPlaceWidth => cardPlaceWidth;
 	public float VerticalOffsetCoef => verticalOffsetCoef;
 	public float RotationOffset => rotationOffset;
 	public float RotationCoef => rotationCoef;
-	public float CardHoverOffset => cardHoverOffset;
 }
